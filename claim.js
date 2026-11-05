@@ -1,8 +1,8 @@
 // GET   /api/claim?id=...                 -> one claim with history
 // PATCH /api/claim?id=...  {fields}       -> edit a pending claim
 // POST  /api/claim?id=...  {decision,note} -> approve / reject
-import { getOne, updateExpense, reviewExpense } from "../lib/expenses.js";
-import { json, readBody, query } from "../lib/http.js";
+import { getOne, updateExpense, reviewExpense } from "../expenses.js";
+import { json, readBody, query } from "../http.js";
 
 export default async function handler(req, res) {
   const { id } = query(req);

@@ -1,7 +1,7 @@
 // GET /api/claims?status=pending  -> list claims
 // POST /api/claims                -> create a claim manually from the app
-import { getAll, createExpense } from "../lib/expenses.js";
-import { json, readBody, query } from "../lib/http.js";
+import { getAll, createExpense } from "../expenses.js";
+import { json, readBody, query } from "../http.js";
 
 export default async function handler(req, res) {
   try {

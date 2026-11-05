@@ -1,7 +1,7 @@
 // GET /api/summary?month=YYYY-MM -> dashboard numbers, categories and policy
-import { summary, CATEGORIES, POLICY_LIMITS } from "../lib/expenses.js";
-import { storageMode } from "../lib/store.js";
-import { json, query } from "../lib/http.js";
+import { summary, CATEGORIES, POLICY_LIMITS } from "../expenses.js";
+import { storageMode } from "../store.js";
+import { json, query } from "../http.js";
 
 export default async function handler(req, res) {
   try {

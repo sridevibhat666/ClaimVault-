@@ -1,4 +1,4 @@
-import { mcpHttpHandler } from "../lib/mcp.js";
+import { mcpHttpHandler } from "../mcp-server.js";
 
 export default async function handler(req, res) {
   let body = req.body;

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ClaimDesk – Expense claims, powered by your Claude</title>
+<style>
+  :root {
+    --bg: #f6f5fb; --card: #fff; --ink: #17151f; --muted: #6b6880; --line: #e7e4f0;
+    --brand: #5b3df5; --brand-soft: #efebff; --green: #12805c; --green-soft: #e3f6ee;
+    --red: #c2362f; --red-soft: #fdeceb; --amber: #a86100; --amber-soft: #fff3df;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink); }
+  header { background: var(--card); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .top { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
+  .logo-mark { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, #5b3df5, #c04df9); display: grid; place-items: center; color: #fff; font-size: 16px; }
+  .live { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 3px #22c55e33; }
+  main { padding: 28px 0 60px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
+  .kpi .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .kpi .val { font-size: 24px; font-weight: 700; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .kpi .hint { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .toolbar { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line); gap: 12px; flex-wrap: wrap; }
+  .tabs { display: flex; gap: 4px; background: var(--bg); padding: 4px; border-radius: 10px; }
+  .tab { border: 0; background: transparent; padding: 7px 14px; border-radius: 7px; font: inherit; font-size: 13px; color: var(--muted); cursor: pointer; }
+  .tab.on { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px #0001; }
+  input.search { border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; font: inherit; font-size: 13px; width: 220px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 500; padding: 10px 14px; border-bottom: 1px solid var(--line); background: #fbfafe; }
+  td { padding: 13px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tr.row { cursor: pointer; transition: background .15s; }
+  tr.row:hover { background: #faf9ff; }
+  tr.fresh { animation: flash 2.4s ease-out; }
+  @keyframes flash { 0% { background: #e4ddff; } 100% { background: transparent; } }
+  .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .muted { color: var(--muted); font-size: 12px; }
+  .pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .pending { background: var(--amber-soft); color: var(--amber); }
+  .approved { background: var(--green-soft); color: var(--green); }
+  .rejected { background: var(--red-soft); color: var(--red); }
+  .flag { background: var(--red-soft); color: var(--red); }
+  .src { background: var(--brand-soft); color: var(--brand); }
+  .empty { padding: 50px 20px; text-align: center; color: var(--muted); }
+  .empty code { background: var(--bg); padding: 2px 6px; border-radius: 5px; }
+  /* drawer */
+  .scrim { position: fixed; inset: 0; background: #17151f55; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 10; }
+  .scrim.on { opacity: 1; pointer-events: auto; }
+  aside { position: fixed; top: 0; right: 0; height: 100%; width: min(520px, 100%); background: var(--card); z-index: 11; transform: translateX(100%); transition: transform .25s ease; display: flex; flex-direction: column; box-shadow: -10px 0 40px #0002; }
+  aside.on { transform: none; }
+  .d-head { padding: 20px 22px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: flex-start; }
+  .d-head h2 { margin: 0 0 6px; font-size: 18px; }
+  .x { border: 0; background: var(--bg); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 18px; }
+  .d-body { padding: 20px 22px; overflow: auto; flex: 1; }
+  .flags { background: var(--red-soft); border-radius: 10px; padding: 12px 14px; margin-bottom: 18px; color: var(--red); font-size: 13px; }
+  .flags b { display: block; margin-bottom: 4px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+  .full { grid-column: 1 / -1; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  .field input, .field select, .field textarea { width: 100%; border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px; font: inherit; font-size: 14px; background: #fff; }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid var(--brand-soft); border-color: var(--brand); }
+  .field input:disabled, .field select:disabled, .field textarea:disabled { background: var(--bg); color: var(--muted); }
+  h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 24px 0 10px; }
+  .hist { list-style: none; padding: 0; margin: 0; border-left: 2px solid var(--line); }
+  .hist li { padding: 0 0 12px 14px; position: relative; font-size: 13px; }
+  .hist li::before { content: ""; position: absolute; left: -6px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--brand); }
+  .d-foot { padding: 14px 22px; border-top: 1px solid var(--line); display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn { border: 1px solid var(--line); background: #fff; padding: 10px 16px; border-radius: 10px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .btn.ok { background: var(--green); border-color: var(--green); color: #fff; }
+  .btn.no { color: var(--red); }
+  .spacer { flex: 1; }
+  .note { background: var(--bg); border-radius: 10px; padding: 12px 14px; font-size: 13px; margin-bottom: 18px; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 11px 18px; border-radius: 10px; font-size: 14px; opacity: 0; transition: all .2s; z-index: 20; }
+  .toast.on { opacity: 1; transform: translateX(-50%); }
+  .cats { display: flex; gap: 8px; flex-wrap: wrap; margin: -8px 0 22px; }
+  .cat { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 12px; }
+  .cat b { font-variant-numeric: tabular-nums; }
+  .connect { background: linear-gradient(135deg, #5b3df5, #8b4df9); color: #fff; border-radius: var(--radius); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 22px; flex-wrap: wrap; }
+  .connect code { background: #ffffff26; padding: 6px 10px; border-radius: 8px; font-size: 13px; }
+  .connect .btn { background: #fff; color: var(--brand); border: 0; padding: 7px 12px; font-size: 13px; }
+  @media (max-width: 760px) {
+    .kpis { grid-template-columns: 1fr 1fr; }
+    .hide-sm { display: none; }
+    input.search { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap top">
+    <div class="logo"><div class="logo-mark">₹</div> ClaimDesk</div>
+    <div class="live"><span class="dot"></span><span id="liveText">Live · updates automatically</span></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>Expense claims</h1>
+  <p class="sub">Employees send receipts to their own Claude. Claude reads them and files the claim here. You review, fix and approve.</p>
+
+  <div class="connect">
+    <div>
+      <div style="font-weight:700;margin-bottom:6px">Connect your Claude</div>
+      <div style="font-size:13px;opacity:.9">Claude → Settings → Connectors → Add custom connector → paste this URL</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <code id="mcpUrl"></code>
+      <button class="btn" id="copyBtn">Copy</button>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="label">Awaiting approval</div><div class="val" id="kPending">–</div><div class="hint" id="kPendingN"></div></div>
+    <div class="kpi"><div class="label">Flagged by policy</div><div class="val" id="kFlagged">–</div><div class="hint">pending claims needing a closer look</div></div>
+    <div class="kpi"><div class="label">Approved this month</div><div class="val" id="kApproved">–</div><div class="hint" id="kMonth"></div></div>
+    <div class="kpi"><div class="label">Rejected this month</div><div class="val" id="kRejected">–</div><div class="hint">saved from reimbursement</div></div>
+  </div>
+  <div class="cats" id="cats"></div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <div class="tabs" id="tabs">
+        <button class="tab on" data-s="pending">Pending</button>
+        <button class="tab" data-s="approved">Approved</button>
+        <button class="tab" data-s="rejected">Rejected</button>
+        <button class="tab" data-s="all">All</button>
+      </div>
+      <input class="search" id="search" placeholder="Search employee or merchant…" />
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Employee</th><th>Merchant</th><th class="hide-sm">Category</th><th class="hide-sm">Date</th>
+          <th class="num">Amount</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="empty" id="empty" hidden></div>
+  </div>
+</main>
+
+<div class="scrim" id="scrim"></div>
+<aside id="drawer" aria-hidden="true">
+  <div class="d-head">
+    <div><h2 id="dTitle"></h2><div id="dBadges" style="display:flex;gap:6px;flex-wrap:wrap"></div></div>
+    <button class="x" id="closeBtn" aria-label="Close">×</button>
+  </div>
+  <div class="d-body">
+    <div id="dFlags"></div>
+    <div id="dNote"></div>
+    <form id="form" class="grid" autocomplete="off">
+      <div class="field full"><label>Employee</label><input name="employee_name" required /></div>
+      <div class="field"><label>Merchant</label><input name="merchant" required /></div>
+      <div class="field"><label>Category</label><select name="category" id="catSelect"></select></div>
+      <div class="field"><label>Amount</label><input name="amount" type="number" step="0.01" min="0.01" required /></div>
+      <div class="field"><label>Currency</label><input name="currency" maxlength="3" /></div>
+      <div class="field"><label>Date on receipt</label><input name="expense_date" type="date" required /></div>
+      <div class="field"><label>Paid with</label><input name="payment_method" placeholder="Corporate card, UPI, cash…" /></div>
+      <div class="field full"><label>Business purpose</label><textarea name="description" rows="2"></textarea></div>
+    </form>
+    <h3>History</h3>
+    <ul class="hist" id="dHist"></ul>
+  </div>
+  <div class="d-foot" id="dFoot">
+    <button class="btn primary" id="saveBtn">Save changes</button>
+    <span class="spacer"></span>
+    <button class="btn no" id="rejectBtn">Reject</button>
+    <button class="btn ok" id="approveBtn">Approve</button>
+  </div>
+</aside>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const inr = (n, cur = "INR") => {
+  try { return new Intl.NumberFormat("en-IN", { style: "currency", currency: cur || "INR", maximumFractionDigits: 2 }).format(n); }
+  catch { return `${cur} ${Number(n).toFixed(2)}`; }
+};
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const when = (iso) => new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+const day = (d) => new Date(d + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+
+let state = { status: "pending", q: "", claims: [], seen: new Set(), first: true, open: null, dirty: false };
+
+$("mcpUrl").textContent = location.origin + "/api/mcp";
+$("copyBtn").onclick = async () => {
+  try { await navigator.clipboard.writeText($("mcpUrl").textContent); toast("Connector URL copied"); }
+  catch { toast("Copy failed. Select the URL and copy it manually"); }
+};
+
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), 2400);
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, { headers: { "Content-Type": "application/json" }, ...opts });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Something went wrong");
+  return data;
+}
+
+async function loadSummary() {
+  const s = await api("/api/summary");
+  $("kPending").textContent = inr(s.pending_amount);
+  $("kPendingN").textContent = `${s.pending_count} claim${s.pending_count === 1 ? "" : "s"}`;
+  $("kFlagged").textContent = s.flagged_pending_count;
+  $("kApproved").textContent = inr(s.approved_this_month);
+  $("kRejected").textContent = inr(s.rejected_this_month);
+  $("kMonth").textContent = new Date(s.month + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  const cats = Object.entries(s.by_category).sort((a, b) => b[1] - a[1]);
+  $("cats").innerHTML = cats.map(([c, v]) => `<span class="cat">${esc(c)} · <b>${inr(v)}</b></span>`).join("");
+  if (!$("catSelect").options.length) $("catSelect").innerHTML = s.categories.map((c) => `<option>${esc(c)}</option>`).join("");
+  if (s.storage === "memory") $("liveText").textContent = "Demo mode · data resets on restart";
+}
+
+async function loadClaims() {
+  const all = await api("/api/claims?status=all");
+  const fresh = state.first ? new Set() : new Set(all.filter((c) => !state.seen.has(c.id)).map((c) => c.id));
+  all.forEach((c) => state.seen.add(c.id));
+  if (fresh.size) {
+    toast(fresh.size === 1 ? "New claim arrived from Claude" : `${fresh.size} new claims arrived`);
+    if (state.status !== "all" && state.status !== "pending") setTab("pending");
+  }
+  state.first = false;
+  state.claims = all;
+  render(fresh);
+  if (state.open && !state.dirty) {
+    const c = all.find((x) => x.id === state.open);
+    if (c) fillDrawer(c);
+  }
+}
+
+function render(fresh = new Set()) {
+  const q = state.q.toLowerCase();
+  const rows = state.claims.filter((c) =>
+    (state.status === "all" || c.status === state.status) &&
+    (!q || c.employee_name.toLowerCase().includes(q) || c.merchant.toLowerCase().includes(q)));
+  $("rows").innerHTML = rows.map((c) => `
+    <tr class="row ${fresh.has(c.id) ? "fresh" : ""}" data-id="${c.id}">
+      <td><div style="font-weight:600">${esc(c.employee_name)}</div><div class="muted">${c.source === "claude" ? "via Claude" : "added in app"} · ${when(c.created_at)}</div></td>
+      <td>${esc(c.merchant)}${c.flags.length && c.status === "pending" ? ` <span class="pill flag" title="${esc(c.flags.join("\n"))}">⚑ ${c.flags.length}</span>` : ""}</td>
+      <td class="hide-sm">${esc(c.category)}</td>
+      <td class="hide-sm">${day(c.expense_date)}</td>
+      <td class="num">${inr(c.amount, c.currency)}</td>
+      <td><span class="pill ${c.status}">${c.status[0].toUpperCase() + c.status.slice(1)}</span></td>
+    </tr>`).join("");
+  const empty = $("empty");
+  empty.hidden = rows.length > 0;
+  if (!rows.length) empty.innerHTML = state.claims.length
+    ? "Nothing here."
+    : `No claims yet. Connect Claude, then send it a receipt and say <code>File this as my expense</code>.`;
+  document.querySelectorAll("tr.row").forEach((tr) => (tr.onclick = () => openDrawer(tr.dataset.id)));
+}
+
+function setTab(s) {
+  state.status = s;
+  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("on", t.dataset.s === s));
+  render();
+}
+document.querySelectorAll(".tab").forEach((t) => (t.onclick = () => setTab(t.dataset.s)));
+$("search").oninput = (e) => { state.q = e.target.value; render(); };
+
+function fillDrawer(c) {
+  $("dTitle").textContent = `${c.merchant} · ${inr(c.amount, c.currency)}`;
+  $("dBadges").innerHTML = `<span class="pill ${c.status}">${c.status[0].toUpperCase() + c.status.slice(1)}</span>` +
+    (c.source === "claude" ? `<span class="pill src">✦ Filed by Claude</span>` : "");
+  $("dFlags").innerHTML = c.flags.length
+    ? `<div class="flags"><b>⚑ Policy check</b>${c.flags.map(esc).join("<br>")}</div>` : "";
+  $("dNote").innerHTML = c.review_note ? `<div class="note"><b>Reviewer note:</b> ${esc(c.review_note)}</div>` : "";
+  const f = $("form");
+  for (const k of ["employee_name", "merchant", "category", "amount", "currency", "expense_date", "payment_method", "description"]) {
+    f.elements[k].value = c[k] ?? "";
+    f.elements[k].disabled = c.status !== "pending";
+  }
+  $("dHist").innerHTML = (c.history || []).slice().reverse().map((h) =>
+    `<li><b>${esc(h.action)}</b>${h.note ? ` · “${esc(h.note)}”` : ""}<div class="muted">${when(h.at)}</div></li>`).join("");
+  $("dFoot").style.display = c.status === "pending" ? "flex" : "none";
+}
+
+async function openDrawer(id) {
+  state.open = id; state.dirty = false;
+  const c = await api(`/api/claim?id=${encodeURIComponent(id)}`);
+  fillDrawer(c);
+  $("drawer").classList.add("on"); $("scrim").classList.add("on");
+  history.replaceState(null, "", `?claim=${id}`);
+}
+function closeDrawer() {
+  state.open = null; state.dirty = false;
+  $("drawer").classList.remove("on"); $("scrim").classList.remove("on");
+  history.replaceState(null, "", location.pathname);
+}
+$("closeBtn").onclick = closeDrawer;
+$("scrim").onclick = closeDrawer;
+document.addEventListener("keydown", (e) => e.key === "Escape" && closeDrawer());
+$("form").oninput = () => (state.dirty = true);
+
+function formData() {
+  const f = $("form");
+  const d = Object.fromEntries(new FormData(f));
+  d.amount = Number(d.amount);
+  return d;
+}
+
+async function act(fn, msg) {
+  const btns = document.querySelectorAll(".d-foot .btn");
+  btns.forEach((b) => (b.disabled = true));
+  try { const c = await fn(); state.dirty = false; fillDrawer(c); toast(msg); await refresh(); }
+  catch (e) { toast(e.message); }
+  finally { btns.forEach((b) => (b.disabled = false)); }
+}
+$("saveBtn").onclick = () => {
+  if (!$("form").reportValidity()) return;
+  act(() => api(`/api/claim?id=${state.open}`, { method: "PATCH", body: JSON.stringify(formData()) }), "Changes saved");
+};
+$("approveBtn").onclick = async () => {
+  if (state.dirty) {
+    if (!$("form").reportValidity()) return;
+    await api(`/api/claim?id=${state.open}`, { method: "PATCH", body: JSON.stringify(formData()) }).catch((e) => toast(e.message));
+  }
+  act(() => api(`/api/claim?id=${state.open}`, { method: "POST", body: JSON.stringify({ decision: "approved" }) }), "Claim approved ✓");
+};
+$("rejectBtn").onclick = () => {
+  const note = prompt("Reason for rejecting (the employee will see this):");
+  if (note === null) return;
+  act(() => api(`/api/claim?id=${state.open}`, { method: "POST", body: JSON.stringify({ decision: "rejected", note }) }), "Claim rejected");
+};
+
+async function refresh() {
+  try { await Promise.all([loadSummary(), loadClaims()]); }
+  catch (e) { console.error(e); }
+}
+
+refresh().then(() => {
+  const id = new URLSearchParams(location.search).get("claim");
+  if (id) openDrawer(id).catch(() => toast("Claim not found"));
+});
+setInterval(() => { if (!document.hidden) refresh(); }, 4000);
+</script>
+</body>
+</html>

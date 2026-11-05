@@ -1,0 +1,12 @@
+{
+  "name": "claimdesk",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Expense claims that run on your own Claude. No AI inside the app.",
+  "scripts": {
+    "dev": "node dev-server.js",
+    "test": "node test/smoke.js"
+  },
+  "engines": { "node": ">=18" }
+}

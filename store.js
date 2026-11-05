@@ -1,12 +1,17 @@
 // Storage layer. Uses Supabase (Postgres) over plain REST when SUPABASE_URL and
-// SUPABASE_SERVICE_KEY are set; otherwise falls back to in-memory storage
-// (handy for local testing; resets on every restart).
+// SUPABASE_SERVICE_KEY are set; otherwise falls back to in-memory storage.
 // No AI anywhere in this app.
 
 import { randomUUID } from "node:crypto";
 
-const URL_ = process.env.SUPABASE_URL;
-const KEY = process.env.SUPABASE_SERVICE_KEY;
+// Accept the URL however it was pasted: with or without a trailing slash,
+// "/rest/v1", spaces or quotes. Keep only https://<project>.supabase.co
+const URL_ = (process.env.SUPABASE_URL || "")
+  .trim()
+  .replace(/^["']|["']$/g, "")
+  .replace(/\/rest\/v1.*$/i, "")
+  .replace(/\/+$/, "");
+const KEY = (process.env.SUPABASE_SERVICE_KEY || "").trim().replace(/^["']|["']$/g, "");
 const useSupabase = Boolean(URL_ && KEY);
 
 const mem = globalThis.__claimdeskMem || (globalThis.__claimdeskMem = []);
